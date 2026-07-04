@@ -436,7 +436,7 @@
       let crossings=0;
       for(let i=1;i<recent.length;i++) if((recent[i-1]-midpoint)*(recent[i]-midpoint)<0) crossings++;
       if(crossings>=2){ const ws=recent.length*0.15; lamp.rateBpm=Math.round((crossings/2)/(ws/60)); lamp.state='blink'; }
-      else{ lamp.state = (prevState==='measuring')?'off':prevState; }
+      else{ lamp.state = current>midpoint?'on':'off'; lamp.rateBpm=null; }
     }
     if(prevState!==lamp.state && prevState!=='measuring') logEvent(lamp, prevState, lamp.state);
   }
