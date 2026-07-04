@@ -419,7 +419,9 @@
     const recentRange=rMax-rMin; const ratio=recentRange/spread;
     const staticThreshold=sensitivity/200; const midpoint=(lamp.allMin+lamp.allMax)/2;
     const current=recent[recent.length-1];
-    if(ratio<staticThreshold){ lamp.state = current>midpoint?'on':'off'; lamp.rateBpm=null; }
+    const NOISE_FLOOR=7; // absolute brightness units; swings below this are camera/sensor noise, never "blinking"
+    const isDynamic = (recentRange > NOISE_FLOOR) && (ratio >= staticThreshold);
+    if(!isDynamic){ lamp.state = current>midpoint?'on':'off'; lamp.rateBpm=null; }
     else{
       let crossings=0;
       for(let i=1;i<recent.length;i++) if((recent[i-1]-midpoint)*(recent[i]-midpoint)<0) crossings++;
