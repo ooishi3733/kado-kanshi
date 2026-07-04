@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>稼働監視モニター（遠隔対応）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#15171a; --bg-grid: rgba(255,255,255,0.03);
+    --panel:#1d2024; --panel-2:#22262b;
+    --border:#33383e; --border-soft:#2a2e33;
+    --text:#e8eaed; --text-dim:#8a9099; --text-faint:#5b6167;
+    --amber:#f2a93b; --amber-glow:rgba(242,169,59,0.5);
+    --green:#43d17a; --green-glow:rgba(67,209,122,0.55);
+    --gray:#5b6167; --red:#e5555c; --red-glow:rgba(229,85,92,0.5);
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      repeating-linear-gradient(0deg, var(--bg-grid) 0px, var(--bg-grid) 1px, transparent 1px, transparent 28px),
+      repeating-linear-gradient(90deg, var(--bg-grid) 0px, var(--bg-grid) 1px, transparent 1px, transparent 28px),
+      var(--bg);
+    color:var(--text); font-family:'Rajdhani',sans-serif; min-height:100vh;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .app{max-width:1180px;margin:0 auto;padding:18px 18px 40px;}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;margin-bottom:14px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 30%, #ffe1a8, var(--amber) 55%, #8a5a12 100%);box-shadow:0 0 10px 2px var(--amber-glow);flex-shrink:0;}
+  .brand h1{font-size:19px;font-weight:700;letter-spacing:.04em;margin:0;}
+  .brand .sub{font-size:11px;color:var(--text-faint);letter-spacing:.12em;font-family:'JetBrains Mono',monospace;margin-top:1px;}
+
+  .mode-switch{display:flex;gap:8px;margin-bottom:12px;}
+  .mode-btn{flex:1;padding:12px;border-radius:9px;border:1px solid var(--border);background:var(--panel);color:var(--text-dim);font-weight:600;letter-spacing:.03em;cursor:pointer;font-size:14px;font-family:'Rajdhani',sans-serif;}
+  .mode-btn.active{border-color:var(--amber);color:var(--amber);background:var(--panel-2);box-shadow:0 0 0 1px var(--amber) inset;}
+
+  .conn-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:16px;padding:12px 14px;}
+  .conn-row label{font-size:12px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;letter-spacing:.05em;}
+  #connIdInput{font-family:'JetBrains Mono',monospace;font-size:18px;letter-spacing:.15em;font-weight:600;color:var(--amber);background:var(--panel-2);border:1px solid var(--border);border-radius:7px;padding:8px 10px;width:110px;text-transform:uppercase;text-align:center;}
+  .conn-hint{font-size:11px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;flex:1 1 180px;line-height:1.5;}
+  .small-btn{padding:7px 12px;font-size:12px;}
+
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
+  .panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--text-dim);margin:0 0 10px;font-weight:600;}
+
+  .layout{display:grid;grid-template-columns:1.55fr 1fr;gap:16px;align-items:start;}
+  @media (max-width:860px){ .layout{grid-template-columns:1fr;} }
+
+  .video-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px;}
+  button{font-family:'Rajdhani',sans-serif;font-weight:600;letter-spacing:.03em;background:var(--panel-2);color:var(--text);border:1px solid var(--border);padding:9px 16px;border-radius:7px;cursor:pointer;font-size:14px;transition:border-color .15s,color .15s,background .15s;}
+  button:hover{border-color:var(--amber);color:var(--amber);}
+  button:active{transform:translateY(1px);}
+  button.primary{background:var(--amber);color:#241703;border-color:var(--amber);}
+  button.primary:hover{background:#ffb84f;color:#241703;}
+  select{font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:8px 10px;}
+  .hint{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--text-faint);flex:1 1 200px;line-height:1.5;}
+
+  .canvas-wrap{position:relative;width:100%;background:#000;border-radius:8px;overflow:hidden;border:1px solid var(--border-soft);aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;}
+  #mainCanvas{width:100%;height:100%;display:block;cursor:crosshair;touch-action:none;}
+  #viewerImg{width:100%;height:100%;object-fit:contain;display:none;}
+  .canvas-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;font-size:12px;text-align:center;padding:20px;}
+  .canvas-placeholder .ring{width:46px;height:46px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--amber);}
+
+  .sensitivity-row{display:flex;align-items:center;gap:12px;margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);}
+  .sensitivity-row input[type=range]{flex:1;accent-color:var(--amber);}
+  .sensitivity-row span.val{color:var(--amber);min-width:22px;display:inline-block;text-align:right;}
+  .row-between{display:flex;align-items:center;justify-content:space-between;}
+
+  .status-chip{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em;padding:6px 12px;border-radius:20px;border:1px solid var(--border);color:var(--text-dim);background:var(--panel-2);display:inline-flex;align-items:center;gap:7px;}
+  .status-chip .d{width:7px;height:7px;border-radius:50%;background:var(--gray);}
+  .status-chip.live{color:var(--green);border-color:rgba(67,209,122,0.35);}
+  .status-chip.live .d{background:var(--green);box-shadow:0 0 6px 1px var(--green-glow);}
+  .status-chip.stale{color:var(--red);border-color:rgba(229,85,92,.35);}
+  .status-chip.stale .d{background:var(--red);box-shadow:0 0 6px 1px var(--red-glow);}
+
+  .lamp-card{background:var(--panel-2);border:1px solid var(--border-soft);border-radius:8px;padding:10px 12px;margin-bottom:9px;}
+  .lamp-card-top{display:flex;align-items:center;gap:10px;}
+  .pilot{width:16px;height:16px;border-radius:50%;flex-shrink:0;position:relative;background:var(--gray);box-shadow:inset 0 1px 2px rgba(0,0,0,0.5), inset 0 -1px 1px rgba(255,255,255,0.05);border:1px solid rgba(0,0,0,0.4);}
+  .pilot.on{background:radial-gradient(circle at 35% 30%, #c9ffdd, var(--green) 60%, #0d5a2c 100%);box-shadow:0 0 9px 2px var(--green-glow), inset 0 -1px 1px rgba(255,255,255,0.2);}
+  .pilot.blink{background:radial-gradient(circle at 35% 30%, #ffe9c2, var(--amber) 60%, #7a4a08 100%);animation:pilotBlink 1s ease-in-out infinite;}
+  .pilot.off{background:radial-gradient(circle at 35% 30%, #6b7178, var(--gray) 65%, #24272b 100%);}
+  .pilot.measuring{background:var(--gray);animation:pilotMeasure 1.4s ease-in-out infinite;}
+  @keyframes pilotBlink{0%,100%{box-shadow:0 0 9px 2px var(--amber-glow);opacity:1;}50%{box-shadow:0 0 2px 0px transparent;opacity:.45;}}
+  @keyframes pilotMeasure{0%,100%{opacity:.35;}50%{opacity:.9;}}
+
+  .lamp-name{flex:1;background:transparent;border:none;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:600;padding:2px 4px;border-radius:4px;min-width:0;}
+  .lamp-name:focus{outline:1px solid var(--amber);background:rgba(255,255,255,0.03);}
+  .lamp-name.readonly{padding:2px 4px;}
+  .lamp-state-label{font-family:'JetBrains Mono',monospace;font-size:11px;padding:2px 8px;border-radius:10px;border:1px solid var(--border);color:var(--text-dim);white-space:nowrap;}
+  .lamp-state-label.on{color:var(--green);border-color:rgba(67,209,122,.35);}
+  .lamp-state-label.blink{color:var(--amber);border-color:rgba(242,169,59,.4);}
+  .lamp-state-label.off{color:var(--text-dim);}
+  .del-btn{background:transparent;border:none;color:var(--text-faint);font-size:16px;cursor:pointer;padding:2px 6px;line-height:1;}
+  .del-btn:hover{color:var(--red);}
+  .lamp-card-bottom{display:flex;align-items:center;gap:10px;margin-top:8px;}
+  .spark{background:#131518;border-radius:4px;border:1px solid var(--border-soft);flex-shrink:0;}
+  .lamp-meta{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--text-faint);line-height:1.6;}
+  .lamp-meta b{color:var(--text-dim);font-weight:500;}
+
+  .empty-state{color:var(--text-faint);font-family:'JetBrains Mono',monospace;font-size:12.5px;text-align:center;padding:26px 10px;border:1px dashed var(--border);border-radius:8px;line-height:1.7;}
+
+  .log-panel{margin-top:14px;}
+  .log-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .log-head h2{margin:0;}
+  .log-head button{padding:5px 10px;font-size:11.5px;}
+  ul.loglist{list-style:none;margin:0;padding:0;max-height:220px;overflow-y:auto;}
+  ul.loglist li{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--text-dim);padding:6px 2px;border-bottom:1px solid var(--border-soft);display:flex;gap:8px;}
+  ul.loglist li:last-child{border-bottom:none;}
+  ul.loglist .t{color:var(--text-faint);flex-shrink:0;}
+  ul.loglist .arrow-on{color:var(--green);}
+  ul.loglist .arrow-blink{color:var(--amber);}
+  ul.loglist .arrow-off{color:var(--text-faint);}
+  ul.loglist:empty::after{content:"イベントはまだありません";color:var(--text-faint);}
+
+  ::-webkit-scrollbar{width:6px;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+  .privacy-note{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--text-faint);margin-top:10px;line-height:1.6;padding:10px 12px;border:1px dashed var(--border);border-radius:8px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div>
+        <h1>稼働監視モニター</h1>
+        <div class="sub">CAMERA LAMP STATE MONITOR — REMOTE</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mode-switch">
+    <button class="mode-btn active" id="modeMonitorBtn">📷 監視（カメラ側 / iPad用）</button>
+    <button class="mode-btn" id="modeViewerBtn">📶 遠隔閲覧（見るだけ / iPhone用）</button>
+  </div>
+
+  <div class="panel conn-row">
+    <label>接続ID</label>
+    <input id="connIdInput" maxlength="6">
+    <button class="small-btn" id="regenBtn">再生成</button>
+    <button class="small-btn" id="copyBtn">コピー</button>
+    <span class="conn-hint">監視側・閲覧側の両方で<b>同じ接続ID</b>を入力してください。ページを閉じてもIDは端末に保存されます。</span>
+  </div>
+
+  <!-- ===== MONITOR MODE ===== -->
+  <div class="layout" id="monitorSection">
+    <section class="panel">
+      <h2>カメラ映像</h2>
+      <div class="video-toolbar">
+        <button class="primary" id="startBtn">カメラを起動</button>
+        <select id="cameraSelect" style="display:none;"></select>
+        <div class="hint" id="hintText">起動後、映像上をドラッグして確認したいランプ・表示灯を四角で囲んでください</div>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="mainCanvas" width="640" height="480"></canvas>
+        <video id="video" playsinline muted style="display:none"></video>
+        <div class="canvas-placeholder" id="placeholder">
+          <div class="ring"></div>
+          <div>カメラは停止中です<br>「カメラを起動」を押して開始してください</div>
+        </div>
+      </div>
+      <div class="sensitivity-row row-between">
+        <span id="pushStatusText">配信: 停止中</span>
+        <span class="status-chip" id="cameraStatusChip"><span class="d"></span><span id="chipText">未接続</span></span>
+      </div>
+      <div class="sensitivity-row">
+        <span>判定感度</span>
+        <input type="range" id="sensSlider" min="5" max="60" value="20">
+        <span class="val" id="sensVal">20</span>
+      </div>
+      <div class="privacy-note">この接続IDを知っている人は誰でもこの映像・状態を閲覧できます（映像はこのアプリ経由のスナップショットとして共有ストレージに保存されます）。他人と共有される場所にこのページのリンクを貼る場合はご注意ください。</div>
+    </section>
+
+    <aside>
+      <div class="panel">
+        <h2>登録ランプ <span id="lampCount" style="color:var(--text-faint);font-weight:400;"></span></h2>
+        <div class="lamp-list" id="lampList">
+          <div class="empty-state" id="emptyState">まだランプが登録されていません<br>カメラ映像上をドラッグして登録してください</div>
+        </div>
+      </div>
+      <div class="panel log-panel">
+        <div class="log-head"><h2>イベントログ</h2><button id="clearLogBtn">クリア</button></div>
+        <ul class="loglist" id="logList"></ul>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ===== VIEWER MODE ===== -->
+  <div class="layout" id="viewerSection" style="display:none;">
+    <section class="panel">
+      <h2>リアルタイム映像（数秒おきに更新される静止画）</h2>
+      <div class="canvas-wrap">
+        <img id="viewerImg">
+        <div class="canvas-placeholder" id="viewerPlaceholder">
+          <div class="ring"></div>
+          <div>接続ID <b id="viewerConnIdShow"></b> のデータを待っています<br>監視側の端末で同じIDを設定しカメラを起動してください</div>
+        </div>
+      </div>
+      <div class="sensitivity-row row-between">
+        <span id="viewerUpdatedText">未接続</span>
+        <span class="status-chip" id="viewerStatusChip"><span class="d"></span><span>オフライン</span></span>
+      </div>
+    </section>
+    <aside>
+      <div class="panel">
+        <h2>ランプ状態 <span id="viewerLampCount" style="color:var(--text-faint);font-weight:400;"></span></h2>
+        <div class="lamp-list" id="viewerLampList">
+          <div class="empty-state">データ待機中...</div>
+        </div>
+      </div>
+      <div class="panel log-panel">
+        <div class="log-head"><h2>イベントログ</h2></div>
+        <ul class="loglist" id="viewerLogList"></ul>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ---------------- shared state ----------------
+  const WINDOW = 40;
+  let mode = 'monitor';
+  const connIdInput = document.getElementById('connIdInput');
+  const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  function genCode(){ let s=''; for(let i=0;i<4;i++) s+=CHARS[Math.floor(Math.random()*CHARS.length)]; return s; }
+  let connId = genCode();
+  connIdInput.value = connId;
+  document.getElementById('viewerConnIdShow').textContent = connId;
+
+  connIdInput.addEventListener('input', ()=>{
+    connId = connIdInput.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+    connIdInput.value = connId;
+    document.getElementById('viewerConnIdShow').textContent = connId || '----';
+    lastViewerPayload = null;
+    renderViewerOffline();
+  });
+  document.getElementById('regenBtn').addEventListener('click', ()=>{
+    connId = genCode(); connIdInput.value = connId;
+    document.getElementById('viewerConnIdShow').textContent = connId;
+  });
+  document.getElementById('copyBtn').addEventListener('click', async ()=>{
+    const btn = document.getElementById('copyBtn');
+    try{ await navigator.clipboard.writeText(connId); btn.textContent='コピー済み'; }
+    catch(e){ btn.textContent='コピー不可'; }
+    setTimeout(()=>btn.textContent='コピー',1500);
+  });
+
+  function storageKey(){ return 'monitor_' + connId; }
+
+  // ---------------- mode switching ----------------
+  const monitorSection = document.getElementById('monitorSection');
+  const viewerSection = document.getElementById('viewerSection');
+  const modeMonitorBtn = document.getElementById('modeMonitorBtn');
+  const modeViewerBtn = document.getElementById('modeViewerBtn');
+  function setMode(m){
+    mode = m;
+    monitorSection.style.display = m==='monitor' ? 'grid' : 'none';
+    viewerSection.style.display = m==='viewer' ? 'grid' : 'none';
+    modeMonitorBtn.classList.toggle('active', m==='monitor');
+    modeViewerBtn.classList.toggle('active', m==='viewer');
+  }
+  modeMonitorBtn.addEventListener('click', ()=>setMode('monitor'));
+  modeViewerBtn.addEventListener('click', ()=>setMode('viewer'));
+
+  // ================= MONITOR MODE =================
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('mainCanvas');
+  const ctx = canvas.getContext('2d', {willReadFrequently:true});
+  const startBtn = document.getElementById('startBtn');
+  const cameraSelect = document.getElementById('cameraSelect');
+  const placeholder = document.getElementById('placeholder');
+  const chip = document.getElementById('cameraStatusChip');
+  const chipText = document.getElementById('chipText');
+  const hintText = document.getElementById('hintText');
+  const lampList = document.getElementById('lampList');
+  const emptyState = document.getElementById('emptyState');
+  const lampCountEl = document.getElementById('lampCount');
+  const logList = document.getElementById('logList');
+  const clearLogBtn = document.getElementById('clearLogBtn');
+  const sensSlider = document.getElementById('sensSlider');
+  const sensVal = document.getElementById('sensVal');
+  const pushStatusText = document.getElementById('pushStatusText');
+
+  let stream=null, running=false;
+  let lamps=[]; let lampSeq=1; let sensitivity=20;
+  let logEntries=[]; // {html}
+
+  sensSlider.addEventListener('input', ()=>{ sensitivity=+sensSlider.value; sensVal.textContent=sensitivity; });
+
+  async function listCameras(){
+    try{
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cams = devices.filter(d=>d.kind==='videoinput');
+      if(cams.length>1){
+        cameraSelect.innerHTML = cams.map((c,i)=>`<option value="${c.deviceId}">${c.label||'カメラ '+(i+1)}</option>`).join('');
+        cameraSelect.style.display='inline-block';
+      }
+    }catch(e){}
+  }
+  async function startCamera(deviceId){
+    try{
+      if(stream){ stream.getTracks().forEach(t=>t.stop()); }
+      const constraints = { audio:false, video: deviceId?{deviceId:{exact:deviceId}}:{facingMode:{ideal:'environment'}} };
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+      video.srcObject = stream; await video.play();
+      canvas.width = video.videoWidth||640; canvas.height = video.videoHeight||480;
+      placeholder.style.display='none';
+      chip.classList.add('live'); chipText.textContent='稼働中';
+      hintText.textContent='映像上をドラッグしてランプ位置を四角で囲むと登録されます';
+      startBtn.textContent='カメラを停止'; running=true;
+      listCameras(); requestAnimationFrame(renderLoop);
+      if(!sampleTimer) sampleTimer=setInterval(sampleLamps,150);
+      if(!pushTimer) pushTimer=setInterval(pushPayload,2000);
+    }catch(err){
+      chipText.textContent='アクセス不可';
+      hintText.textContent='カメラを利用できませんでした。ブラウザの権限設定を確認してください。('+err.message+')';
+    }
+  }
+  function stopCamera(){
+    if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+    running=false; placeholder.style.display='flex';
+    chip.classList.remove('live'); chipText.textContent='未接続';
+    startBtn.textContent='カメラを起動'; pushStatusText.textContent='配信: 停止中';
+  }
+  startBtn.addEventListener('click', ()=>{ running?stopCamera():startCamera(cameraSelect.value||undefined); });
+  cameraSelect.addEventListener('change', ()=>{ if(running) startCamera(cameraSelect.value); });
+
+  function renderLoop(){
+    if(running && video.readyState>=2){
+      ctx.drawImage(video,0,0,canvas.width,canvas.height);
+      for(const lamp of lamps){
+        const color = lamp.state==='on'?'#43d17a':lamp.state==='blink'?'#f2a93b':lamp.state==='off'?'#8a9099':'#5b6167';
+        ctx.strokeStyle=color; ctx.lineWidth=2; ctx.strokeRect(lamp.x,lamp.y,lamp.w,lamp.h);
+        ctx.font='13px JetBrains Mono, monospace';
+        const label = lamp.name+'  '+stateLabel(lamp.state);
+        const tw = ctx.measureText(label).width;
+        ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(lamp.x, Math.max(0,lamp.y-20), tw+10, 18);
+        ctx.fillStyle=color; ctx.fillText(label, lamp.x+5, Math.max(13,lamp.y-6));
+      }
+      if(dragRect){
+        ctx.strokeStyle='#f2a93b'; ctx.setLineDash([5,4]); ctx.lineWidth=2;
+        ctx.strokeRect(dragRect.x,dragRect.y,dragRect.w,dragRect.h); ctx.setLineDash([]);
+      }
+    }
+    requestAnimationFrame(renderLoop);
+  }
+  function stateLabel(s){ if(s==='on')return '稼働中'; if(s==='blink')return '点滅中'; if(s==='off')return '停止中'; return '計測中'; }
+
+  let dragStart=null, dragRect=null;
+  function toCanvasCoords(cx,cy){ const r=canvas.getBoundingClientRect(); return {x:(cx-r.left)*(canvas.width/r.width), y:(cy-r.top)*(canvas.height/r.height)}; }
+  function pointerDown(x,y){ if(!running) return; dragStart=toCanvasCoords(x,y); dragRect={x:dragStart.x,y:dragStart.y,w:0,h:0}; }
+  function pointerMove(x,y){ if(!dragStart) return; const p=toCanvasCoords(x,y); dragRect={x:Math.min(dragStart.x,p.x),y:Math.min(dragStart.y,p.y),w:Math.abs(p.x-dragStart.x),h:Math.abs(p.y-dragStart.y)}; }
+  function pointerUp(){ if(dragRect && dragRect.w>12 && dragRect.h>12) addLamp(dragRect); dragStart=null; dragRect=null; }
+  canvas.addEventListener('mousedown', e=>pointerDown(e.clientX,e.clientY));
+  canvas.addEventListener('mousemove', e=>pointerMove(e.clientX,e.clientY));
+  window.addEventListener('mouseup', pointerUp);
+  canvas.addEventListener('touchstart', e=>{ const t=e.touches[0]; pointerDown(t.clientX,t.clientY); e.preventDefault(); },{passive:false});
+  canvas.addEventListener('touchmove', e=>{ const t=e.touches[0]; pointerMove(t.clientX,t.clientY); e.preventDefault(); },{passive:false});
+  canvas.addEventListener('touchend', ()=>pointerUp(),{passive:false});
+
+  function addLamp(rect){
+    lamps.push({ id:'lamp'+(lampSeq++), name:'ランプ'+(lamps.length+1),
+      x:Math.round(rect.x),y:Math.round(rect.y),w:Math.round(rect.w),h:Math.round(rect.h),
+      history:[], allMin:null, allMax:null, state:'measuring', rateBpm:null, onSeconds:0 });
+    renderSidebar();
+  }
+  function removeLamp(id){ lamps=lamps.filter(l=>l.id!==id); renderSidebar(); }
+
+  let sampleTimer=null, pushTimer=null;
+  function sampleLamps(){
+    if(!running || lamps.length===0) return;
+    let frame; try{ frame=ctx.getImageData(0,0,canvas.width,canvas.height); }catch(e){ return; }
+    const data=frame.data, cw=canvas.width;
+    for(const lamp of lamps){
+      const x0=Math.max(0,lamp.x), y0=Math.max(0,lamp.y);
+      const x1=Math.min(cw,lamp.x+lamp.w), y1=Math.min(canvas.height,lamp.y+lamp.h);
+      let sum=0,count=0;
+      const stepX=Math.max(1,Math.floor((x1-x0)/24)), stepY=Math.max(1,Math.floor((y1-y0)/24));
+      for(let y=y0;y<y1;y+=stepY) for(let x=x0;x<x1;x+=stepX){ const idx=(y*cw+x)*4; sum+=0.299*data[idx]+0.587*data[idx+1]+0.114*data[idx+2]; count++; }
+      const avg = count?sum/count:0;
+      lamp.history.push(avg); if(lamp.history.length>WINDOW) lamp.history.shift();
+      lamp.allMin = lamp.allMin===null?avg:Math.min(lamp.allMin,avg);
+      lamp.allMax = lamp.allMax===null?avg:Math.max(lamp.allMax,avg);
+      classifyLamp(lamp);
+      if(lamp.state==='on'||lamp.state==='blink') lamp.onSeconds+=0.15;
+    }
+    renderSidebar();
+  }
+  function classifyLamp(lamp){
+    const prevState=lamp.state; const spread=lamp.allMax-lamp.allMin;
+    if(lamp.history.length<8 || spread<8){ lamp.state='measuring'; return; }
+    const recent=lamp.history; const rMin=Math.min(...recent), rMax=Math.max(...recent);
+    const recentRange=rMax-rMin; const ratio=recentRange/spread;
+    const staticThreshold=sensitivity/200; const midpoint=(lamp.allMin+lamp.allMax)/2;
+    const current=recent[recent.length-1];
+    if(ratio<staticThreshold){ lamp.state = current>midpoint?'on':'off'; lamp.rateBpm=null; }
+    else{
+      let crossings=0;
+      for(let i=1;i<recent.length;i++) if((recent[i-1]-midpoint)*(recent[i]-midpoint)<0) crossings++;
+      if(crossings>=2){ const ws=recent.length*0.15; lamp.rateBpm=Math.round((crossings/2)/(ws/60)); lamp.state='blink'; }
+      else{ lamp.state = (prevState==='measuring')?'off':prevState; }
+    }
+    if(prevState!==lamp.state && prevState!=='measuring') logEvent(lamp, prevState, lamp.state);
+  }
+  function logEvent(lamp, from, to){
+    const time = new Date().toLocaleTimeString('ja-JP',{hour12:false});
+    const cls = to==='on'?'arrow-on':to==='blink'?'arrow-blink':'arrow-off';
+    const html = `<span class="t">${time}</span><span>${escapeHtml(lamp.name)} : ${stateLabel(from)} → <span class="${cls}">${stateLabel(to)}</span></span>`;
+    logEntries.unshift({html}); if(logEntries.length>60) logEntries.pop();
+    const li=document.createElement('li'); li.innerHTML=html; logList.insertBefore(li,logList.firstChild);
+    while(logList.children.length>150) logList.removeChild(logList.lastChild);
+  }
+  clearLogBtn.addEventListener('click', ()=>{ logList.innerHTML=''; logEntries=[]; });
+  function escapeHtml(s){ return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  function fmtDuration(sec){ sec=Math.floor(sec); const h=String(Math.floor(sec/3600)).padStart(2,'0'),m=String(Math.floor((sec%3600)/60)).padStart(2,'0'),s=String(sec%60).padStart(2,'0'); return `${h}:${m}:${s}`; }
+
+  function renderSidebar(){
+    lampCountEl.textContent = lamps.length?`(${lamps.length})`:'';
+    emptyState.style.display = lamps.length?'none':'block';
+    lampList.querySelectorAll('.lamp-card').forEach(n=>n.remove());
+    for(const lamp of lamps){
+      const card = buildLampCard(lamp, true);
+      lampList.appendChild(card);
+    }
+  }
+  function buildLampCard(lamp, editable){
+    const card=document.createElement('div'); card.className='lamp-card';
+    const top=document.createElement('div'); top.className='lamp-card-top';
+    const pilot=document.createElement('div'); pilot.className='pilot '+lamp.state;
+    if(lamp.state==='blink' && lamp.rateBpm) pilot.style.animationDuration=Math.max(0.3,60/lamp.rateBpm)+'s';
+    let nameEl;
+    if(editable){
+      nameEl=document.createElement('input'); nameEl.className='lamp-name'; nameEl.value=lamp.name;
+      nameEl.addEventListener('input', ()=>{ lamp.name=nameEl.value||lamp.name; });
+    } else {
+      nameEl=document.createElement('div'); nameEl.className='lamp-name readonly'; nameEl.textContent=lamp.name;
+    }
+    const stateTag=document.createElement('span'); stateTag.className='lamp-state-label '+lamp.state;
+    stateTag.textContent = stateLabel(lamp.state) + (lamp.state==='blink'&&lamp.rateBpm?` ${lamp.rateBpm}/分`:'');
+    top.append(pilot, nameEl, stateTag);
+    if(editable){
+      const del=document.createElement('button'); del.className='del-btn'; del.textContent='✕'; del.title='削除';
+      del.addEventListener('click', ()=>removeLamp(lamp.id)); top.append(del);
+    }
+    const bottom=document.createElement('div'); bottom.className='lamp-card-bottom';
+    const spark=document.createElement('canvas'); spark.width=100; spark.height=28; spark.className='spark';
+    drawSpark(spark, lamp.history, lamp.state);
+    const meta=document.createElement('div'); meta.className='lamp-meta';
+    meta.innerHTML = `稼働時間 <b>${fmtDuration(lamp.onSeconds||0)}</b>`;
+    bottom.append(spark, meta); card.append(top, bottom);
+    return card;
+  }
+  function drawSpark(canvasEl, history, state){
+    const c=canvasEl.getContext('2d'); c.clearRect(0,0,canvasEl.width,canvasEl.height);
+    const h=history||[]; if(h.length<2) return;
+    const min=Math.min(...h), max=Math.max(...h), range=(max-min)||1;
+    c.beginPath(); c.strokeStyle = state==='on'?'#43d17a':state==='blink'?'#f2a93b':'#8a9099'; c.lineWidth=1.5;
+    h.forEach((v,i)=>{ const px=(i/(WINDOW-1))*canvasEl.width; const py=canvasEl.height-((v-min)/range)*canvasEl.height*0.85-2; if(i===0)c.moveTo(px,py); else c.lineTo(px,py); });
+    c.stroke();
+  }
+
+  function takeSnapshot(){
+    const tmp=document.createElement('canvas');
+    tmp.width=320; tmp.height=Math.round(320*canvas.height/canvas.width);
+    tmp.getContext('2d').drawImage(canvas,0,0,tmp.width,tmp.height);
+    return tmp.toDataURL('image/jpeg',0.5);
+  }
+  async function pushPayload(){
+    if(!running || mode!=='monitor' || !connId) { pushStatusText.textContent='配信: 停止中'; return; }
+    const payload = {
+      updatedAt: Date.now(),
+      lamps: lamps.map(l=>({ name:l.name, state:l.state, rateBpm:l.rateBpm, onSeconds:l.onSeconds, history:l.history.slice(-20) })),
+      log: logEntries.slice(0,30),
+      image: takeSnapshot()
+    };
+    try{
+      await window.storage.set(storageKey(), JSON.stringify(payload), true);
+      pushStatusText.textContent = '配信: ' + new Date().toLocaleTimeString('ja-JP',{hour12:false}) + ' (ID:'+connId+')';
+    }catch(e){
+      pushStatusText.textContent = '配信エラー';
+    }
+  }
+
+  // ================= VIEWER MODE =================
+  const viewerImg=document.getElementById('viewerImg');
+  const viewerPlaceholder=document.getElementById('viewerPlaceholder');
+  const viewerUpdatedText=document.getElementById('viewerUpdatedText');
+  const viewerStatusChip=document.getElementById('viewerStatusChip');
+  const viewerLampList=document.getElementById('viewerLampList');
+  const viewerLampCount=document.getElementById('viewerLampCount');
+  const viewerLogList=document.getElementById('viewerLogList');
+  let lastViewerPayload=null;
+
+  async function viewerPoll(){
+    if(mode!=='viewer' || !connId) return;
+    try{
+      const res = await window.storage.get(storageKey(), true);
+      if(res && res.value){ lastViewerPayload = JSON.parse(res.value); renderViewer(); }
+    }catch(e){ /* no data yet */ }
+  }
+  function renderViewer(){
+    if(!lastViewerPayload) return;
+    const p = lastViewerPayload;
+    viewerImg.src = p.image; viewerImg.style.display='block'; viewerPlaceholder.style.display='none';
+    viewerLampCount.textContent = p.lamps && p.lamps.length ? `(${p.lamps.length})` : '';
+    viewerLampList.innerHTML='';
+    if(!p.lamps || p.lamps.length===0){
+      viewerLampList.innerHTML = '<div class="empty-state">監視側にランプが登録されていません</div>';
+    } else {
+      for(const lamp of p.lamps) viewerLampList.appendChild(buildLampCard(lamp, false));
+    }
+    viewerLogList.innerHTML='';
+    (p.log||[]).forEach(entry=>{ const li=document.createElement('li'); li.innerHTML=entry.html; viewerLogList.appendChild(li); });
+  }
+  function renderViewerOffline(){
+    viewerImg.style.display='none'; viewerPlaceholder.style.display='flex';
+    viewerLampList.innerHTML='<div class="empty-state">データ待機中...</div>';
+    viewerLogList.innerHTML='';
+    viewerStatusChip.classList.remove('live'); viewerStatusChip.classList.add('stale');
+    viewerStatusChip.querySelector('span:last-child').textContent='未接続';
+    viewerUpdatedText.textContent='未接続';
+  }
+  function tickViewerStatus(){
+    if(mode!=='viewer') return;
+    if(!lastViewerPayload){ renderViewerOffline(); return; }
+    const ageSec = Math.round((Date.now()-lastViewerPayload.updatedAt)/1000);
+    viewerUpdatedText.textContent = ageSec<=1 ? '最終更新: たった今' : `最終更新: ${ageSec}秒前`;
+    if(ageSec <= 8){
+      viewerStatusChip.classList.add('live'); viewerStatusChip.classList.remove('stale');
+      viewerStatusChip.querySelector('span:last-child').textContent='オンライン';
+    } else {
+      viewerStatusChip.classList.remove('live'); viewerStatusChip.classList.add('stale');
+      viewerStatusChip.querySelector('span:last-child').textContent='更新停止';
+    }
+  }
+  setInterval(viewerPoll, 2000);
+  setInterval(tickViewerStatus, 1000);
+  renderViewerOffline();
+
+  renderSidebar();
+})();
+</script>
+</body>
+</html>
