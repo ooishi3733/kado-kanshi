@@ -42,10 +42,9 @@
   .conn-row{margin-bottom:16px;padding:14px;}
   .conn-row .conn-top{display:flex;flex-wrap:wrap;align-items:center;gap:10px;}
   .conn-row label{font-size:12px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;letter-spacing:.05em;flex-shrink:0;}
-  #connIdInput{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.02em;font-weight:600;color:var(--amber);background:var(--panel-2);border:1px solid var(--border);border-radius:7px;padding:9px 10px;flex:1;min-width:160px;}
+  #connIdInput{font-family:'JetBrains Mono',monospace;font-size:18px;letter-spacing:.15em;font-weight:600;color:var(--amber);background:var(--panel-2);border:1px solid var(--border);border-radius:7px;padding:8px 12px;width:120px;text-transform:uppercase;text-align:center;}
   .conn-hint{font-size:11px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;line-height:1.6;margin-top:8px;}
   .small-btn{padding:8px 13px;font-size:12.5px;white-space:nowrap;}
-  .small-btn:disabled{opacity:.4;cursor:not-allowed;}
 
   .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
   .panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--text-dim);margin:0 0 10px;font-weight:600;}
@@ -145,11 +144,11 @@
   <div class="panel conn-row">
     <div class="conn-top">
       <label>接続ID</label>
-      <input id="connIdInput" placeholder="監視側で「新規作成」を押してください">
-      <button class="small-btn" id="createBtn">新規作成</button>
+      <input id="connIdInput" maxlength="6">
+      <button class="small-btn" id="regenBtn">再生成</button>
       <button class="small-btn" id="copyBtn">コピー</button>
     </div>
-    <div class="conn-hint" id="connHint">監視側でまず「新規作成」を押し、表示された接続IDを閲覧側（別の端末）に貼り付けてください。</div>
+    <div class="conn-hint">監視側・閲覧側の両方で<b>同じ接続ID</b>を入力してください。</div>
   </div>
 
   <!-- ===== MONITOR MODE ===== -->
@@ -230,51 +229,46 @@
 (function(){
   const WINDOW = 40;
   let mode = 'monitor';
-  let connId = '';
 
-  // ---------------- kvdb.io backend ----------------
-  const KVDB = 'https://kvdb.io';
-  async function kvCreateBucket(){
-    const res = await fetch(KVDB, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'email=anonymous@example.com' });
-    if(!res.ok) throw new Error('bucket create failed');
-    return (await res.text()).trim();
+  // ---------------- Firebase Realtime Database backend ----------------
+  const FIREBASE_URL = 'https://kado-kanshi-default-rtdb.firebaseio.com';
+  function nodeUrl(id){ return `${FIREBASE_URL}/monitors/${id}.json`; }
+  async function fbSet(id, payload){
+    const res = await fetch(nodeUrl(id), {
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('firebase set failed: '+res.status);
   }
-  async function kvSet(key, value){
-    const res = await fetch(`${KVDB}/${connId}/${key}`, { method:'POST', body:value });
-    if(!res.ok) throw new Error('kv set failed: '+res.status);
-  }
-  async function kvGet(key){
-    const res = await fetch(`${KVDB}/${connId}/${key}`);
-    if(!res.ok) throw new Error('kv get failed: '+res.status);
-    return await res.text();
+  async function fbGet(id){
+    const res = await fetch(nodeUrl(id));
+    if(!res.ok) throw new Error('firebase get failed: '+res.status);
+    const data = await res.json();
+    if(data===null) throw new Error('no data yet');
+    return data;
   }
 
+  const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  function genCode(){ let s=''; for(let i=0;i<4;i++) s+=CHARS[Math.floor(Math.random()*CHARS.length)]; return s; }
+  let connId = genCode();
   const connIdInput = document.getElementById('connIdInput');
-  const createBtn = document.getElementById('createBtn');
-  const copyBtn = document.getElementById('copyBtn');
-  const connHint = document.getElementById('connHint');
+  connIdInput.value = connId;
 
   connIdInput.addEventListener('input', ()=>{
-    connId = connIdInput.value.trim();
+    connId = connIdInput.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+    connIdInput.value = connId;
     lastViewerPayload = null;
     renderViewerOffline();
   });
-  createBtn.addEventListener('click', async ()=>{
-    createBtn.disabled = true; createBtn.textContent='作成中...';
-    try{
-      const id = await kvCreateBucket();
-      connId = id; connIdInput.value = id;
-      connHint.textContent = 'この接続IDを閲覧側の端末にコピーして貼り付けてください。';
-    }catch(e){
-      connHint.textContent = '接続IDの作成に失敗しました。ネットワーク接続を確認して、もう一度お試しください。';
-    }
-    createBtn.disabled=false; createBtn.textContent='新規作成';
+  document.getElementById('regenBtn').addEventListener('click', ()=>{
+    connId = genCode(); connIdInput.value = connId;
   });
-  copyBtn.addEventListener('click', async ()=>{
-    if(!connId){ return; }
-    try{ await navigator.clipboard.writeText(connId); copyBtn.textContent='コピー済み'; }
-    catch(e){ copyBtn.textContent='コピー不可'; }
-    setTimeout(()=>copyBtn.textContent='コピー',1500);
+  document.getElementById('copyBtn').addEventListener('click', async ()=>{
+    const btn = document.getElementById('copyBtn');
+    try{ await navigator.clipboard.writeText(connId); btn.textContent='コピー済み'; }
+    catch(e){ btn.textContent='コピー不可'; }
+    setTimeout(()=>btn.textContent='コピー',1500);
   });
 
   // ---------------- mode switching ----------------
@@ -436,7 +430,7 @@
     const time = new Date().toLocaleTimeString('ja-JP',{hour12:false});
     const cls = to==='on'?'arrow-on':to==='blink'?'arrow-blink':'arrow-off';
     const html = `<span class="t">${time}</span><span>${escapeHtml(lamp.name)} : ${stateLabel(from)} → <span class="${cls}">${stateLabel(to)}</span></span>`;
-    logEntries.unshift({html}); if(logEntries.length>15) logEntries.pop();
+    logEntries.unshift({html}); if(logEntries.length>30) logEntries.pop();
     const li=document.createElement('li'); li.innerHTML=html; logList.insertBefore(li,logList.firstChild);
     while(logList.children.length>150) logList.removeChild(logList.lastChild);
   }
@@ -489,23 +483,23 @@
 
   function takeSnapshot(){
     const tmp=document.createElement('canvas');
-    tmp.width=160; tmp.height=Math.round(160*canvas.height/canvas.width);
+    tmp.width=240; tmp.height=Math.round(240*canvas.height/canvas.width);
     tmp.getContext('2d').drawImage(canvas,0,0,tmp.width,tmp.height);
-    return tmp.toDataURL('image/jpeg',0.4);
+    return tmp.toDataURL('image/jpeg',0.45);
   }
   async function pushPayload(){
-    if(!running || mode!=='monitor' || !connId){ pushStatusText.textContent='配信: 停止中（接続ID未設定）'; return; }
-    const stateObj = {
+    if(!running || mode!=='monitor' || !connId){ pushStatusText.textContent='配信: 停止中'; return; }
+    const payload = {
       updatedAt: Date.now(),
-      lamps: lamps.map(l=>({ name:l.name, state:l.state, rateBpm:l.rateBpm, onSeconds:Math.round(l.onSeconds), history:l.history.slice(-15) })),
-      log: logEntries.slice(0,15)
+      lamps: lamps.map(l=>({ name:l.name, state:l.state, rateBpm:l.rateBpm, onSeconds:Math.round(l.onSeconds), history:l.history.slice(-20) })),
+      log: logEntries.slice(0,20),
+      image: takeSnapshot()
     };
     try{
-      await kvSet('state', JSON.stringify(stateObj));
-      await kvSet('img', takeSnapshot());
-      pushStatusText.textContent = '配信: ' + new Date().toLocaleTimeString('ja-JP',{hour12:false});
+      await fbSet(connId, payload);
+      pushStatusText.textContent = '配信: ' + new Date().toLocaleTimeString('ja-JP',{hour12:false}) + ' (ID:'+connId+')';
     }catch(e){
-      pushStatusText.textContent = '配信エラー（ネットワークまたは接続IDを確認）';
+      pushStatusText.textContent = '配信エラー（ネットワーク接続を確認してください）';
     }
   }
 
@@ -522,13 +516,10 @@
   async function viewerPoll(){
     if(mode!=='viewer' || !connId) return;
     try{
-      const stateText = await kvGet('state');
-      const imgText = await kvGet('img');
-      const payload = JSON.parse(stateText);
-      payload.image = imgText;
+      const payload = await fbGet(connId);
       lastViewerPayload = payload;
       renderViewer();
-    }catch(e){ /* not ready yet */ }
+    }catch(e){ /* no data yet */ }
   }
   function renderViewer(){
     if(!lastViewerPayload) return;
