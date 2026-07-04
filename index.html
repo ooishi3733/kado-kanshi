@@ -87,6 +87,7 @@
   .pilot.on{background:radial-gradient(circle at 35% 30%, #c9ffdd, var(--green) 60%, #0d5a2c 100%);box-shadow:0 0 9px 2px var(--green-glow), inset 0 -1px 1px rgba(255,255,255,0.2);}
   .pilot.blink{background:radial-gradient(circle at 35% 30%, #ffe9c2, var(--amber) 60%, #7a4a08 100%);animation:pilotBlink 1s ease-in-out infinite;}
   .pilot.off{background:radial-gradient(circle at 35% 30%, #6b7178, var(--gray) 65%, #24272b 100%);}
+  .pilot.error-on{background:radial-gradient(circle at 35% 30%, #ffd0d2, var(--red) 60%, #7a1418 100%);box-shadow:0 0 9px 2px var(--red-glow), inset 0 -1px 1px rgba(255,255,255,0.2);}
   .pilot.measuring{background:var(--gray);animation:pilotMeasure 1.4s ease-in-out infinite;}
   @keyframes pilotBlink{0%,100%{box-shadow:0 0 9px 2px var(--amber-glow);opacity:1;}50%{box-shadow:0 0 2px 0px transparent;opacity:.45;}}
   @keyframes pilotMeasure{0%,100%{opacity:.35;}50%{opacity:.9;}}
@@ -98,6 +99,7 @@
   .lamp-state-label.on{color:var(--green);border-color:rgba(67,209,122,.35);}
   .lamp-state-label.blink{color:var(--amber);border-color:rgba(242,169,59,.4);}
   .lamp-state-label.off{color:var(--text-dim);}
+  .lamp-state-label.error-on{color:var(--red);border-color:rgba(229,85,92,.4);}
   .del-btn{background:transparent;border:none;color:var(--text-faint);font-size:16px;cursor:pointer;padding:2px 6px;line-height:1;}
   .del-btn:hover{color:var(--red);}
   .lamp-card-bottom{display:flex;align-items:center;gap:10px;margin-top:8px;}
@@ -355,10 +357,10 @@
     if(running && video.readyState>=2){
       ctx.drawImage(video,0,0,canvas.width,canvas.height);
       for(const lamp of lamps){
-        const color = lamp.state==='on'?'#43d17a':lamp.state==='blink'?'#f2a93b':lamp.state==='off'?'#8a9099':'#5b6167';
+        const color = (lamp.kind==='error'&&lamp.state==='on')?'#e5555c':lamp.state==='on'?'#43d17a':lamp.state==='blink'?'#f2a93b':lamp.state==='off'?'#8a9099':'#5b6167';
         ctx.strokeStyle=color; ctx.lineWidth=2; ctx.strokeRect(lamp.x,lamp.y,lamp.w,lamp.h);
         ctx.font='13px JetBrains Mono, monospace';
-        const label = lamp.name+'  '+stateLabel(lamp.state);
+        const label = lamp.name+'  '+stateLabel(lamp.state, lamp.kind);
         const tw = ctx.measureText(label).width;
         ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(lamp.x, Math.max(0,lamp.y-20), tw+10, 18);
         ctx.fillStyle=color; ctx.fillText(label, lamp.x+5, Math.max(13,lamp.y-6));
@@ -370,7 +372,15 @@
     }
     requestAnimationFrame(renderLoop);
   }
-  function stateLabel(s){ if(s==='on')return '稼働中'; if(s==='blink')return '点滅中'; if(s==='off')return '停止中'; return '計測中'; }
+  function stateLabel(s, kind){
+    if(kind==='error'){
+      if(s==='on') return 'エラー中';
+      if(s==='blink') return 'エラー(点滅)';
+      if(s==='off') return '正常';
+      return '計測中';
+    }
+    if(s==='on')return '稼働中'; if(s==='blink')return '点滅中'; if(s==='off')return '停止中'; return '計測中';
+  }
 
   let dragStart=null, dragRect=null;
   function toCanvasCoords(cx,cy){ const r=canvas.getBoundingClientRect(); return {x:(cx-r.left)*(canvas.width/r.width), y:(cy-r.top)*(canvas.height/r.height)}; }
@@ -385,7 +395,7 @@
   canvas.addEventListener('touchend', ()=>pointerUp(),{passive:false});
 
   function addLamp(rect){
-    lamps.push({ id:'lamp'+(lampSeq++), name:'ランプ'+(lamps.length+1),
+    lamps.push({ id:'lamp'+(lampSeq++), name:'ランプ'+(lamps.length+1), kind:'run',
       x:Math.round(rect.x),y:Math.round(rect.y),w:Math.round(rect.w),h:Math.round(rect.h),
       history:[], allMin:null, allMax:null, state:'measuring', rateBpm:null, onSeconds:0 });
     renderSidebar();
@@ -433,7 +443,7 @@
   function logEvent(lamp, from, to){
     const time = new Date().toLocaleTimeString('ja-JP',{hour12:false});
     const cls = to==='on'?'arrow-on':to==='blink'?'arrow-blink':'arrow-off';
-    const html = `<span class="t">${time}</span><span>${escapeHtml(lamp.name)} : ${stateLabel(from)} → <span class="${cls}">${stateLabel(to)}</span></span>`;
+    const html = `<span class="t">${time}</span><span>${escapeHtml(lamp.name)} : ${stateLabel(from, lamp.kind)} → <span class="${cls}">${stateLabel(to, lamp.kind)}</span></span>`;
     logEntries.unshift({html}); if(logEntries.length>30) logEntries.pop();
     const li=document.createElement('li'); li.innerHTML=html; logList.insertBefore(li,logList.firstChild);
     while(logList.children.length>150) logList.removeChild(logList.lastChild);
@@ -452,7 +462,8 @@
   function buildLampCard(lamp, editable){
     const card=document.createElement('div'); card.className='lamp-card';
     const top=document.createElement('div'); top.className='lamp-card-top';
-    const pilot=document.createElement('div'); pilot.className='pilot '+lamp.state;
+    const pilotClass = (lamp.kind==='error' && lamp.state==='on') ? 'error-on' : lamp.state;
+    const pilot=document.createElement('div'); pilot.className='pilot '+pilotClass;
     if(lamp.state==='blink' && lamp.rateBpm) pilot.style.animationDuration=Math.max(0.3,60/lamp.rateBpm)+'s';
     let nameEl;
     if(editable){
@@ -461,10 +472,17 @@
     } else {
       nameEl=document.createElement('div'); nameEl.className='lamp-name readonly'; nameEl.textContent=lamp.name;
     }
-    const stateTag=document.createElement('span'); stateTag.className='lamp-state-label '+lamp.state;
-    stateTag.textContent = stateLabel(lamp.state) + (lamp.state==='blink'&&lamp.rateBpm?` ${lamp.rateBpm}/分`:'');
+    const stateTag=document.createElement('span');
+    const tagClass = (lamp.kind==='error' && lamp.state==='on') ? 'error-on' : lamp.state;
+    stateTag.className='lamp-state-label '+tagClass;
+    stateTag.textContent = stateLabel(lamp.state, lamp.kind) + (lamp.state==='blink'&&lamp.rateBpm?` ${lamp.rateBpm}/分`:'');
     top.append(pilot, nameEl, stateTag);
     if(editable){
+      const kindSel=document.createElement('select'); kindSel.style.fontSize='11px'; kindSel.style.padding='4px 6px';
+      kindSel.innerHTML = '<option value="run">稼働用</option><option value="error">エラー用</option>';
+      kindSel.value = lamp.kind||'run';
+      kindSel.addEventListener('change', ()=>{ lamp.kind = kindSel.value; renderSidebar(); });
+      top.insertBefore(kindSel, stateTag);
       const del=document.createElement('button'); del.className='del-btn'; del.textContent='✕'; del.title='削除';
       del.addEventListener('click', ()=>removeLamp(lamp.id)); top.append(del);
     }
@@ -495,7 +513,7 @@
     if(!running || mode!=='monitor' || !connId){ pushStatusText.textContent='配信: 停止中'; return; }
     const payload = {
       updatedAt: Date.now(),
-      lamps: lamps.map(l=>({ name:l.name, state:l.state, rateBpm:l.rateBpm, onSeconds:Math.round(l.onSeconds), history:l.history.slice(-20) })),
+      lamps: lamps.map(l=>({ name:l.name, kind:l.kind, state:l.state, rateBpm:l.rateBpm, onSeconds:Math.round(l.onSeconds), history:l.history.slice(-20) })),
       log: logEntries.slice(0,20),
       image: takeSnapshot()
     };
