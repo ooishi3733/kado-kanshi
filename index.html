@@ -580,7 +580,12 @@
       pendingRun:0, pendingErr:0 });
     renderSidebar();
   }
-  function removeLamp(id){ lamps=lamps.filter(l=>l.id!==id); renderSidebar(); }
+  function removeLamp(id){
+    const lamp = lamps.find(l=>l.id===id);
+    if(lamp && lamp._el) lamp._el.remove();
+    lamps=lamps.filter(l=>l.id!==id);
+    renderSidebar();
+  }
 
   let sampleTimer=null, pushTimer=null;
   function sampleLamps(){
@@ -669,8 +674,28 @@
   function renderSidebar(){
     lampCountEl.textContent = lamps.length?`(${lamps.length})`:'';
     emptyState.style.display = lamps.length?'none':'block';
-    lampList.querySelectorAll('.lamp-card').forEach(n=>n.remove());
-    for(const lamp of lamps){ lampList.appendChild(buildLampCard(lamp, true)); }
+    for(const lamp of lamps){
+      if(!lamp._el){
+        const card = buildLampCard(lamp, true);
+        lamp._el = card;
+        lampList.appendChild(card);
+      } else {
+        updateLampCardDynamic(lamp);
+      }
+    }
+  }
+  function updateLampCardDynamic(lamp){
+    const vis = lampVisualState(lamp);
+    if(lamp._pilotEl){
+      lamp._pilotEl.className = 'pilot ' + vis.cls;
+      lamp._pilotEl.style.animationDuration = (lamp.state==='blink' && lamp.rateBpm) ? Math.max(0.3,60/lamp.rateBpm)+'s' : '';
+    }
+    if(lamp._stateTagEl){
+      lamp._stateTagEl.className = 'lamp-state-label ' + vis.cls;
+      lamp._stateTagEl.textContent = stateLabel(lamp.state, lamp.kind) + (lamp.state==='blink'&&lamp.rateBpm?` ${lamp.rateBpm}/分`:'');
+    }
+    if(lamp._sparkEl) drawSpark(lamp._sparkEl, lamp.history, lamp.state);
+    if(lamp._metaEl) lamp._metaEl.innerHTML = `稼働時間 <b>${fmtDuration(lamp.onSeconds||0)}</b>`;
   }
   function buildLampCard(lamp, editable){
     const card=document.createElement('div'); card.className='lamp-card';
@@ -694,7 +719,7 @@
       const kindSel=document.createElement('select'); kindSel.style.fontSize='11px'; kindSel.style.padding='4px 6px';
       kindSel.innerHTML = '<option value="run">稼働用</option><option value="error">エラー用</option><option value="colorpair">赤緑1領域(自動判定)</option>';
       kindSel.value = lamp.kind||'run';
-      kindSel.addEventListener('change', ()=>{ lamp.kind = kindSel.value; renderSidebar(); });
+      kindSel.addEventListener('change', ()=>{ lamp.kind = kindSel.value; updateLampCardDynamic(lamp); });
       top.insertBefore(kindSel, stateTag);
       const del=document.createElement('button'); del.className='del-btn'; del.textContent='✕'; del.title='削除';
       del.addEventListener('click', ()=>removeLamp(lamp.id)); top.append(del);
@@ -705,6 +730,9 @@
     const meta=document.createElement('div'); meta.className='lamp-meta';
     meta.innerHTML = `稼働時間 <b>${fmtDuration(lamp.onSeconds||0)}</b>`;
     bottom.append(spark, meta); card.append(top, bottom);
+    if(editable){
+      lamp._pilotEl = pilot; lamp._stateTagEl = stateTag; lamp._sparkEl = spark; lamp._metaEl = meta;
+    }
     return card;
   }
   function drawSpark(canvasEl, history, state){
