@@ -239,6 +239,11 @@
         <span class="status-chip" id="cameraStatusChip"><span class="d"></span><span id="chipText">未接続</span></span>
       </div>
       <div class="sensitivity-row">
+        <span>ズーム</span>
+        <input type="range" id="zoomSlider" min="10" max="40" value="10">
+        <span class="val" id="zoomVal">1.0x</span>
+      </div>
+      <div class="sensitivity-row">
         <span>判定感度</span>
         <input type="range" id="sensSlider" min="5" max="60" value="20">
         <span class="val" id="sensVal">20</span>
@@ -473,6 +478,15 @@
   let logEntries=[]; // {html}
 
   sensSlider.addEventListener('input', ()=>{ sensitivity=+sensSlider.value; sensVal.textContent=sensitivity; });
+  const zoomSlider=document.getElementById('zoomSlider');
+  const zoomVal=document.getElementById('zoomVal');
+  zoomSlider.addEventListener('input', ()=>{
+    zoomLevel = (+zoomSlider.value)/10;
+    zoomVal.textContent = zoomLevel.toFixed(1)+'x';
+    if(lamps.length>0){
+      hintText.textContent = '注意: ズームを変更すると登録済みランプの検知位置がずれます。ズーム調整後にランプを登録し直してください。';
+    }
+  });
 
   async function listCameras(){
     try{
@@ -512,9 +526,13 @@
   startBtn.addEventListener('click', ()=>{ running?stopCamera():startCamera(cameraSelect.value||undefined); });
   cameraSelect.addEventListener('change', ()=>{ if(running) startCamera(cameraSelect.value); });
 
+  let zoomLevel = 1;
   function renderLoop(){
     if(running && video.readyState>=2){
-      ctx.drawImage(video,0,0,canvas.width,canvas.height);
+      const vw = video.videoWidth, vh = video.videoHeight;
+      const sw = vw/zoomLevel, sh = vh/zoomLevel;
+      const sx = (vw-sw)/2, sy = (vh-sh)/2;
+      ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
       for(const lamp of lamps){
         const color = lampVisualState(lamp).hex;
         ctx.strokeStyle=color; ctx.lineWidth=2; ctx.strokeRect(lamp.x,lamp.y,lamp.w,lamp.h);
@@ -595,17 +613,22 @@
     for(const lamp of lamps){
       const x0=Math.max(0,lamp.x), y0=Math.max(0,lamp.y);
       const x1=Math.min(cw,lamp.x+lamp.w), y1=Math.min(canvas.height,lamp.y+lamp.h);
-      let sum=0,sumR=0,sumG=0,sumB=0,count=0;
-      const stepX=Math.max(1,Math.floor((x1-x0)/24)), stepY=Math.max(1,Math.floor((y1-y0)/24));
+      let sum=0,count=0,redCount=0,greenCount=0;
+      const dense = lamp.kind==='colorpair';
+      const gridN = dense ? 48 : 24;
+      const stepX=Math.max(1,Math.floor((x1-x0)/gridN)), stepY=Math.max(1,Math.floor((y1-y0)/gridN));
       for(let y=y0;y<y1;y+=stepY) for(let x=x0;x<x1;x+=stepX){
         const idx=(y*cw+x)*4;
         const r=data[idx], g=data[idx+1], b=data[idx+2];
-        sum+=0.299*r+0.587*g+0.114*b; sumR+=r; sumG+=g; sumB+=b; count++;
+        sum+=0.299*r+0.587*g+0.114*b; count++;
+        // per-pixel lit-lamp classification: bright AND strongly dominated by one channel
+        if(r>110 && r-g>45 && r-b>35) redCount++;
+        else if(g>110 && g-r>40 && g-b>35) greenCount++;
       }
       const avg = count?sum/count:0;
       lamp.history.push(avg); if(lamp.history.length>WINDOW) lamp.history.shift();
       if(!lamp.rgbHistory) lamp.rgbHistory=[];
-      lamp.rgbHistory.push({r:count?sumR/count:0, g:count?sumG/count:0, b:count?sumB/count:0});
+      lamp.rgbHistory.push({ redRatio: count?redCount/count:0, greenRatio: count?greenCount/count:0 });
       if(lamp.rgbHistory.length>8) lamp.rgbHistory.shift();
       lamp.allMin = lamp.allMin===null?avg:Math.min(lamp.allMin,avg);
       lamp.allMax = lamp.allMax===null?avg:Math.max(lamp.allMax,avg);
@@ -622,16 +645,16 @@
   function classifyColorLamp(lamp){
     const prev = lamp.state;
     if(!lamp.rgbHistory || lamp.rgbHistory.length<5){ lamp.state='measuring'; return; }
-    let sr=0,sg=0,sb=0; for(const c of lamp.rgbHistory){ sr+=c.r; sg+=c.g; sb+=c.b; }
-    const n=lamp.rgbHistory.length; const r=sr/n, g=sg/n, b=sb/n;
-    const brightness = r+g+b;
-    const OFF_FLOOR = 70;   // total RGB brightness below this = both lamps off
-    const MARGIN = 12;      // required channel dominance to call red/green
+    let sRed=0, sGreen=0;
+    for(const c of lamp.rgbHistory){ sRed+=(c.redRatio||0); sGreen+=(c.greenRatio||0); }
+    const n=lamp.rgbHistory.length;
+    const redRatio = sRed/n, greenRatio = sGreen/n;
+    // sensitivity slider (5-60) controls how many lit pixels are needed: lower = more sensitive
+    const PRESENCE = Math.max(0.005, sensitivity/2000); // 0.005 - 0.03 of sampled pixels
     let next;
-    if(brightness < OFF_FLOOR){ next='off'; }
-    else if(r-g > MARGIN && r-b > MARGIN){ next='error'; }
-    else if(g-r > MARGIN && g-b > MARGIN){ next='run'; }
-    else { next = (prev==='measuring') ? 'off' : prev; }
+    if(redRatio > PRESENCE){ next='error'; }          // red takes priority (error wins if both visible)
+    else if(greenRatio > PRESENCE){ next='run'; }
+    else { next='off'; }
     lamp.state = next;
     if(prev!==next && prev!=='measuring') logEvent(lamp, prev, next);
   }
