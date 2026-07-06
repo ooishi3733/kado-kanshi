@@ -125,6 +125,67 @@
   ::-webkit-scrollbar{width:6px;}
   ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
   .privacy-note{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--text-faint);margin-top:10px;line-height:1.6;padding:10px 12px;border:1px dashed var(--border);border-radius:8px;}
+
+  /* ---------- dashboard (printable A4 report) ---------- */
+  .dash-outer{display:flex;justify-content:center;padding:6px 0 30px;}
+  .dash-page{
+    width:210mm; max-width:100%; min-height:180mm; background:#f4f5f3; color:#1c1e21;
+    padding:14mm 14mm 10mm; border-radius:6px; box-shadow:0 8px 30px rgba(0,0,0,0.4);
+    font-family:'Rajdhani',sans-serif;
+  }
+  .dash-header{display:flex;align-items:flex-end;justify-content:space-between;border-bottom:3px solid #1c1e21;padding-bottom:10px;margin-bottom:16px;}
+  .dash-title{font-size:24px;font-weight:700;letter-spacing:.02em;}
+  .dash-sub{font-size:12px;color:#555;font-family:'JetBrains Mono',monospace;margin-top:2px;}
+  .dash-meta{font-size:11px;color:#555;font-family:'JetBrains Mono',monospace;text-align:right;}
+
+  .dash-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+  .dash-kpi{background:#fff;border:1px solid #d8dade;border-radius:8px;padding:10px 12px;}
+  .dash-kpi .k-label{font-size:10.5px;color:#666;font-family:'JetBrains Mono',monospace;letter-spacing:.04em;}
+  .dash-kpi .k-value{font-size:22px;font-weight:700;margin-top:3px;font-family:'JetBrains Mono',monospace;}
+  .dash-kpi .k-value.green{color:#1e8a4c;} .dash-kpi .k-value.red{color:#c23f45;} .dash-kpi .k-value.amber{color:#b3790f;}
+
+  .dash-card{background:#fff;border:1px solid #d8dade;border-radius:8px;padding:12px 14px;margin-bottom:14px;}
+  .dash-card h3{font-size:12.5px;text-transform:uppercase;letter-spacing:.08em;color:#444;margin:0 0 10px;font-weight:700;}
+  .dash-card-note{font-size:10.5px;color:#888;text-transform:none;letter-spacing:0;font-weight:500;margin-left:8px;}
+  .dash-card-head-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .dash-card-head-row h3{margin:0 0 10px;}
+  .period-filter{display:flex;gap:5px;margin-bottom:8px;}
+  .pf-btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 12px;border:1px solid #ccc;border-radius:14px;background:#fff;color:#555;cursor:pointer;}
+  .pf-btn:hover{border-color:#1c1e21;color:#1c1e21;}
+  .pf-btn.active{background:#1c1e21;color:#fff;border-color:#1c1e21;}
+  .period-chart{display:flex;align-items:flex-end;gap:2px;height:130px;margin-top:16px;padding-bottom:2px;border-bottom:1.5px solid #333;}
+  .period-chart .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0;position:relative;}
+  .period-chart .bar{width:68%;background:#2e9c5c;border-radius:2px 2px 0 0;min-height:1px;}
+  .period-chart .bar.sunday{background:#c3c7cc;}
+  .period-chart .bar-label{font-size:8px;color:#666;margin-top:3px;font-family:'JetBrains Mono',monospace;white-space:nowrap;}
+  .dash-row-2col{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+
+  #timelineCanvas{width:100%;height:54px;display:block;border-radius:4px;}
+  .timeline-legend{display:flex;gap:16px;margin-top:8px;font-size:10.5px;color:#444;font-family:'JetBrains Mono',monospace;}
+  .timeline-legend .lg{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle;}
+
+  .donut-wrap{display:flex;align-items:center;gap:20px;}
+  .donut{width:120px;height:120px;border-radius:50%;flex-shrink:0;position:relative;background:#eee;}
+  .donut-center{position:absolute;inset:16px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:#1c1e21;text-align:center;line-height:1.3;}
+  .donut-legend{font-size:11.5px;color:#333;font-family:'JetBrains Mono',monospace;line-height:2;}
+  .donut-legend .lg{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;}
+
+  table.dash-table{width:100%;border-collapse:collapse;font-size:11.5px;font-family:'JetBrains Mono',monospace;}
+  table.dash-table th{text-align:left;color:#666;font-weight:600;border-bottom:2px solid #ccc;padding:5px 6px;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;}
+  table.dash-table td{padding:6px 6px;border-bottom:1px solid #e4e6e9;color:#222;}
+  table.dash-table tr:last-child td{border-bottom:none;}
+  .dash-print-row{text-align:center;margin-top:6px;}
+
+  @media print{
+    body{background:#fff !important;}
+    .topbar,.mode-switch,.conn-row,#monitorSection,#viewerSection,.no-print{display:none !important;}
+    .app{max-width:none;padding:0;}
+    .dash-outer{padding:0;}
+    .dash-page{box-shadow:none;width:auto;min-height:0;border-radius:0;}
+    #periodTable tbody tr{display:table-row !important;}
+    @page{ size:A4; margin:10mm; }
+  }
+
 </style>
 </head>
 <body>
@@ -143,6 +204,7 @@
   <div class="mode-switch">
     <button class="mode-btn active" id="modeMonitorBtn">📷 監視（カメラ側）</button>
     <button class="mode-btn" id="modeViewerBtn">📶 遠隔閲覧（見るだけ）</button>
+    <button class="mode-btn" id="modeDashboardBtn">📊 ダッシュボード</button>
   </div>
 
   <div class="panel conn-row">
@@ -227,6 +289,79 @@
       </div>
     </aside>
   </div>
+
+  <!-- ===== DASHBOARD MODE ===== -->
+  <div id="dashboardSection" style="display:none;">
+    <div class="dash-outer">
+      <div class="dash-page" id="dashPage">
+        <div class="dash-header">
+          <div>
+            <div class="dash-title">稼働状況ダッシュボード</div>
+            <div class="dash-sub" id="dashSub">代表ランプ: -</div>
+          </div>
+          <div class="dash-meta" id="dashMeta">出力日時: -</div>
+        </div>
+
+        <div class="dash-kpis" id="dashKpis"></div>
+
+        <div class="dash-card">
+          <div class="dash-card-head-row">
+            <h3>期間別 稼働実績<span class="dash-card-note" id="periodNote">（日曜日を除く24時間換算）</span></h3>
+            <div class="period-filter no-print" id="periodFilter">
+              <button class="pf-btn" data-p="Day">日</button>
+              <button class="pf-btn" data-p="Week">週</button>
+              <button class="pf-btn active" data-p="Month">月</button>
+              <button class="pf-btn" data-p="Term">期</button>
+            </div>
+          </div>
+          <table class="dash-table" id="periodTable">
+            <thead><tr><th>期間</th><th>対象日</th><th>稼働時間</th><th>稼働率</th></tr></thead>
+            <tbody>
+              <tr data-p="Day"><td>日</td><td id="pDayRange">-</td><td id="pDayTime">-</td><td id="pDayRate">-</td></tr>
+              <tr data-p="Week"><td>週</td><td id="pWeekRange">-</td><td id="pWeekTime">-</td><td id="pWeekRate">-</td></tr>
+              <tr data-p="Month"><td>月</td><td id="pMonthRange">-</td><td id="pMonthTime">-</td><td id="pMonthRate">-</td></tr>
+              <tr data-p="Term"><td>期</td><td id="pTermRange">-</td><td id="pTermTime">-</td><td id="pTermRate">-</td></tr>
+            </tbody>
+          </table>
+          <div class="period-chart" id="periodChart"></div>
+        </div>
+
+        <div class="dash-card">
+          <h3>稼働状況タイムライン<span class="dash-card-note" id="timelineNote"></span></h3>
+          <canvas id="timelineCanvas" width="760" height="54"></canvas>
+          <div class="timeline-legend">
+            <span><i class="lg" style="background:#2e9c5c"></i>稼働中</span>
+            <span><i class="lg" style="background:#c23f45"></i>エラー</span>
+            <span><i class="lg" style="background:#9aa0a6"></i>停止中</span>
+            <span><i class="lg" style="background:#e2e5e8"></i>計測前</span>
+          </div>
+        </div>
+
+        <div class="dash-row-2col">
+          <div class="dash-card">
+            <h3>状態別時間配分</h3>
+            <div class="donut-wrap">
+              <div class="donut" id="donutChart"><div class="donut-center" id="donutCenter"></div></div>
+              <div class="donut-legend" id="donutLegend"></div>
+            </div>
+          </div>
+          <div class="dash-card">
+            <h3>ランプ別サマリー</h3>
+            <table class="dash-table" id="lampTable"><thead><tr><th>ランプ</th><th>種類</th><th>状態</th><th>稼働時間</th><th>エラー回数</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+
+        <div class="dash-card">
+          <h3>最近のイベント</h3>
+          <table class="dash-table" id="dashLogTable"><thead><tr><th>時刻</th><th>内容</th></tr></thead><tbody></tbody></table>
+        </div>
+
+        <div class="no-print dash-print-row">
+          <button class="primary" id="printBtn">🖨 印刷 / PDF保存（A4）</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -251,6 +386,24 @@
     const data = await res.json();
     if(data===null) throw new Error('no data yet');
     return data;
+  }
+  function dailyUrl(id, date){ return `${FIREBASE_URL}/monitors/${id}/daily/${date}.json`; }
+  function dailyAllUrl(id){ return `${FIREBASE_URL}/monitors/${id}/daily.json`; }
+  async function fbGetDate(id, date){
+    const res = await fetch(dailyUrl(id, date));
+    if(!res.ok) throw new Error('daily get failed: '+res.status);
+    const data = await res.json();
+    return data || {run:0, err:0};
+  }
+  async function fbSetDate(id, date, obj){
+    const res = await fetch(dailyUrl(id, date), { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(obj) });
+    if(!res.ok) throw new Error('daily set failed: '+res.status);
+  }
+  async function fbGetAllDaily(id){
+    const res = await fetch(dailyAllUrl(id));
+    if(!res.ok) throw new Error('daily-all get failed: '+res.status);
+    const data = await res.json();
+    return data || {};
   }
 
   const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -278,17 +431,23 @@
   // ---------------- mode switching ----------------
   const monitorSection = document.getElementById('monitorSection');
   const viewerSection = document.getElementById('viewerSection');
+  const dashboardSection = document.getElementById('dashboardSection');
   const modeMonitorBtn = document.getElementById('modeMonitorBtn');
   const modeViewerBtn = document.getElementById('modeViewerBtn');
+  const modeDashboardBtn = document.getElementById('modeDashboardBtn');
   function setMode(m){
     mode = m;
     monitorSection.style.display = m==='monitor' ? 'grid' : 'none';
     viewerSection.style.display = m==='viewer' ? 'grid' : 'none';
+    dashboardSection.style.display = m==='dashboard' ? 'block' : 'none';
     modeMonitorBtn.classList.toggle('active', m==='monitor');
     modeViewerBtn.classList.toggle('active', m==='viewer');
+    modeDashboardBtn.classList.toggle('active', m==='dashboard');
+    if(m==='dashboard'){ renderDashboard(); refreshDailyCache(); }
   }
   modeMonitorBtn.addEventListener('click', ()=>setMode('monitor'));
   modeViewerBtn.addEventListener('click', ()=>setMode('viewer'));
+  modeDashboardBtn.addEventListener('click', ()=>setMode('dashboard'));
 
   // ================= MONITOR MODE =================
   const video = document.getElementById('video');
@@ -357,7 +516,7 @@
     if(running && video.readyState>=2){
       ctx.drawImage(video,0,0,canvas.width,canvas.height);
       for(const lamp of lamps){
-        const color = (lamp.kind==='error'&&lamp.state==='on')?'#e5555c':lamp.state==='on'?'#43d17a':lamp.state==='blink'?'#f2a93b':lamp.state==='off'?'#8a9099':'#5b6167';
+        const color = lampVisualState(lamp).hex;
         ctx.strokeStyle=color; ctx.lineWidth=2; ctx.strokeRect(lamp.x,lamp.y,lamp.w,lamp.h);
         ctx.font='13px JetBrains Mono, monospace';
         const label = lamp.name+'  '+stateLabel(lamp.state, lamp.kind);
@@ -372,7 +531,26 @@
     }
     requestAnimationFrame(renderLoop);
   }
+  function lampVisualState(lamp){
+    if(lamp.kind==='colorpair'){
+      if(lamp.state==='error') return {hex:'#e5555c', cls:'error-on'};
+      if(lamp.state==='run') return {hex:'#43d17a', cls:'on'};
+      if(lamp.state==='off') return {hex:'#8a9099', cls:'off'};
+      return {hex:'#5b6167', cls:'measuring'};
+    }
+    if(lamp.kind==='error' && lamp.state==='on') return {hex:'#e5555c', cls:'error-on'};
+    if(lamp.state==='on') return {hex:'#43d17a', cls:'on'};
+    if(lamp.state==='blink') return {hex:'#f2a93b', cls:'blink'};
+    if(lamp.state==='off') return {hex:'#8a9099', cls:'off'};
+    return {hex:'#5b6167', cls:'measuring'};
+  }
   function stateLabel(s, kind){
+    if(kind==='colorpair'){
+      if(s==='error') return 'エラー停止';
+      if(s==='run') return '稼働中';
+      if(s==='off') return '停止中';
+      return '計測中';
+    }
     if(kind==='error'){
       if(s==='on') return 'エラー中';
       if(s==='blink') return 'エラー(点滅)';
@@ -397,7 +575,9 @@
   function addLamp(rect){
     lamps.push({ id:'lamp'+(lampSeq++), name:'ランプ'+(lamps.length+1), kind:'run',
       x:Math.round(rect.x),y:Math.round(rect.y),w:Math.round(rect.w),h:Math.round(rect.h),
-      history:[], allMin:null, allMax:null, state:'measuring', rateBpm:null, onSeconds:0 });
+      history:[], rgbHistory:[], allMin:null, allMax:null, state:'measuring', rateBpm:null,
+      onSeconds:0, errorSeconds:0, errorCount:0, createdAt:Date.now(), transitions:[],
+      pendingRun:0, pendingErr:0 });
     renderSidebar();
   }
   function removeLamp(id){ lamps=lamps.filter(l=>l.id!==id); renderSidebar(); }
@@ -410,17 +590,45 @@
     for(const lamp of lamps){
       const x0=Math.max(0,lamp.x), y0=Math.max(0,lamp.y);
       const x1=Math.min(cw,lamp.x+lamp.w), y1=Math.min(canvas.height,lamp.y+lamp.h);
-      let sum=0,count=0;
+      let sum=0,sumR=0,sumG=0,sumB=0,count=0;
       const stepX=Math.max(1,Math.floor((x1-x0)/24)), stepY=Math.max(1,Math.floor((y1-y0)/24));
-      for(let y=y0;y<y1;y+=stepY) for(let x=x0;x<x1;x+=stepX){ const idx=(y*cw+x)*4; sum+=0.299*data[idx]+0.587*data[idx+1]+0.114*data[idx+2]; count++; }
+      for(let y=y0;y<y1;y+=stepY) for(let x=x0;x<x1;x+=stepX){
+        const idx=(y*cw+x)*4;
+        const r=data[idx], g=data[idx+1], b=data[idx+2];
+        sum+=0.299*r+0.587*g+0.114*b; sumR+=r; sumG+=g; sumB+=b; count++;
+      }
       const avg = count?sum/count:0;
       lamp.history.push(avg); if(lamp.history.length>WINDOW) lamp.history.shift();
+      if(!lamp.rgbHistory) lamp.rgbHistory=[];
+      lamp.rgbHistory.push({r:count?sumR/count:0, g:count?sumG/count:0, b:count?sumB/count:0});
+      if(lamp.rgbHistory.length>8) lamp.rgbHistory.shift();
       lamp.allMin = lamp.allMin===null?avg:Math.min(lamp.allMin,avg);
       lamp.allMax = lamp.allMax===null?avg:Math.max(lamp.allMax,avg);
-      classifyLamp(lamp);
-      if(lamp.state==='on'||lamp.state==='blink') lamp.onSeconds+=0.15;
+      if(lamp.kind==='colorpair'){ classifyColorLamp(lamp); } else { classifyLamp(lamp); }
+      const isRunning = lamp.kind==='colorpair' ? (lamp.state==='run') : (lamp.state==='on'||lamp.state==='blink');
+      const isError = lamp.kind==='colorpair' ? (lamp.state==='error') : (lamp.kind==='error' && lamp.state==='on');
+      if(isRunning) lamp.onSeconds+=0.15;
+      if(isError) lamp.errorSeconds = (lamp.errorSeconds||0)+0.15;
+      if(isRunning) lamp.pendingRun = (lamp.pendingRun||0)+0.15;
+      if(isError) lamp.pendingErr = (lamp.pendingErr||0)+0.15;
     }
     renderSidebar();
+  }
+  function classifyColorLamp(lamp){
+    const prev = lamp.state;
+    if(!lamp.rgbHistory || lamp.rgbHistory.length<5){ lamp.state='measuring'; return; }
+    let sr=0,sg=0,sb=0; for(const c of lamp.rgbHistory){ sr+=c.r; sg+=c.g; sb+=c.b; }
+    const n=lamp.rgbHistory.length; const r=sr/n, g=sg/n, b=sb/n;
+    const brightness = r+g+b;
+    const OFF_FLOOR = 70;   // total RGB brightness below this = both lamps off
+    const MARGIN = 12;      // required channel dominance to call red/green
+    let next;
+    if(brightness < OFF_FLOOR){ next='off'; }
+    else if(r-g > MARGIN && r-b > MARGIN){ next='error'; }
+    else if(g-r > MARGIN && g-b > MARGIN){ next='run'; }
+    else { next = (prev==='measuring') ? 'off' : prev; }
+    lamp.state = next;
+    if(prev!==next && prev!=='measuring') logEvent(lamp, prev, next);
   }
   function classifyLamp(lamp){
     const prevState=lamp.state; const spread=lamp.allMax-lamp.allMin;
@@ -447,6 +655,11 @@
     logEntries.unshift({html}); if(logEntries.length>30) logEntries.pop();
     const li=document.createElement('li'); li.innerHTML=html; logList.insertBefore(li,logList.firstChild);
     while(logList.children.length>150) logList.removeChild(logList.lastChild);
+    lamp.transitions = lamp.transitions||[];
+    lamp.transitions.push({at:Date.now(), state:to});
+    if(lamp.transitions.length>300) lamp.transitions.shift();
+    const isErrorTransition = (lamp.kind==='error' && to==='on') || (lamp.kind==='colorpair' && to==='error');
+    if(isErrorTransition) lamp.errorCount = (lamp.errorCount||0)+1;
   }
   clearLogBtn.addEventListener('click', ()=>{ logList.innerHTML=''; logEntries=[]; });
   function escapeHtml(s){ return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -462,7 +675,7 @@
   function buildLampCard(lamp, editable){
     const card=document.createElement('div'); card.className='lamp-card';
     const top=document.createElement('div'); top.className='lamp-card-top';
-    const pilotClass = (lamp.kind==='error' && lamp.state==='on') ? 'error-on' : lamp.state;
+    const pilotClass = lampVisualState(lamp).cls;
     const pilot=document.createElement('div'); pilot.className='pilot '+pilotClass;
     if(lamp.state==='blink' && lamp.rateBpm) pilot.style.animationDuration=Math.max(0.3,60/lamp.rateBpm)+'s';
     let nameEl;
@@ -473,13 +686,13 @@
       nameEl=document.createElement('div'); nameEl.className='lamp-name readonly'; nameEl.textContent=lamp.name;
     }
     const stateTag=document.createElement('span');
-    const tagClass = (lamp.kind==='error' && lamp.state==='on') ? 'error-on' : lamp.state;
+    const tagClass = lampVisualState(lamp).cls;
     stateTag.className='lamp-state-label '+tagClass;
     stateTag.textContent = stateLabel(lamp.state, lamp.kind) + (lamp.state==='blink'&&lamp.rateBpm?` ${lamp.rateBpm}/分`:'');
     top.append(pilot, nameEl, stateTag);
     if(editable){
       const kindSel=document.createElement('select'); kindSel.style.fontSize='11px'; kindSel.style.padding='4px 6px';
-      kindSel.innerHTML = '<option value="run">稼働用</option><option value="error">エラー用</option>';
+      kindSel.innerHTML = '<option value="run">稼働用</option><option value="error">エラー用</option><option value="colorpair">赤緑1領域(自動判定)</option>';
       kindSel.value = lamp.kind||'run';
       kindSel.addEventListener('change', ()=>{ lamp.kind = kindSel.value; renderSidebar(); });
       top.insertBefore(kindSel, stateTag);
@@ -509,11 +722,36 @@
     tmp.getContext('2d').drawImage(canvas,0,0,tmp.width,tmp.height);
     return tmp.toDataURL('image/jpeg',0.45);
   }
+  function dateKeyOf(d){ const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+  function pickPrimaryLampLocal(){ return lamps.find(l=>l.kind==='colorpair') || lamps.find(l=>l.kind==='run') || lamps[0]; }
+  let dailyFlushInFlight=false;
+  async function flushDaily(){
+    if(dailyFlushInFlight || !connId) return;
+    const primary = pickPrimaryLampLocal();
+    if(!primary) return;
+    const pr = primary.pendingRun||0, pe = primary.pendingErr||0;
+    if(pr<0.1 && pe<0.1) return;
+    dailyFlushInFlight = true;
+    const now = new Date();
+    const today = dateKeyOf(now);
+    const hour = now.getHours();
+    try{
+      const existing = await fbGetDate(connId, today);
+      const hourly = Array.isArray(existing.hourly) ? existing.hourly.slice() : new Array(24).fill(0);
+      hourly[hour] = (hourly[hour]||0) + pr;
+      const merged = { run:(existing.run||0)+pr, err:(existing.err||0)+pe, hourly };
+      await fbSetDate(connId, today, merged);
+      primary.pendingRun = 0; primary.pendingErr = 0;
+    }catch(e){ /* keep pending, retry next cycle */ }
+    dailyFlushInFlight = false;
+  }
   async function pushPayload(){
     if(!running || mode!=='monitor' || !connId){ pushStatusText.textContent='配信: 停止中'; return; }
     const payload = {
       updatedAt: Date.now(),
-      lamps: lamps.map(l=>({ name:l.name, kind:l.kind, state:l.state, rateBpm:l.rateBpm, onSeconds:Math.round(l.onSeconds), history:l.history.slice(-20) })),
+      lamps: lamps.map(l=>({ name:l.name, kind:l.kind, state:l.state, rateBpm:l.rateBpm,
+        onSeconds:Math.round(l.onSeconds), errorSeconds:Math.round(l.errorSeconds||0), errorCount:l.errorCount||0,
+        createdAt:l.createdAt, transitions:(l.transitions||[]).slice(-100), history:l.history.slice(-20) })),
       log: logEntries.slice(0,20),
       image: takeSnapshot()
     };
@@ -523,6 +761,7 @@
     }catch(e){
       pushStatusText.textContent = '配信エラー（ネットワーク接続を確認してください）';
     }
+    flushDaily();
   }
 
   // ================= VIEWER MODE =================
@@ -581,6 +820,273 @@
   setInterval(viewerPoll, 3000);
   setInterval(tickViewerStatus, 1000);
   renderViewerOffline();
+
+  // ================= DASHBOARD MODE =================
+  const dashKpis=document.getElementById('dashKpis');
+  const dashSub=document.getElementById('dashSub');
+  const dashMeta=document.getElementById('dashMeta');
+  const timelineNote=document.getElementById('timelineNote');
+  const timelineCanvas=document.getElementById('timelineCanvas');
+  const donutChart=document.getElementById('donutChart');
+  const donutCenter=document.getElementById('donutCenter');
+  const donutLegend=document.getElementById('donutLegend');
+  const lampTableBody=document.querySelector('#lampTable tbody');
+  const dashLogTableBody=document.querySelector('#dashLogTable tbody');
+  document.getElementById('printBtn').addEventListener('click', ()=>window.print());
+
+  function getDashboardLamps(){
+    if(lamps.length>0) return { list: lamps, logSrc: logEntries };
+    if(lastViewerPayload && lastViewerPayload.lamps && lastViewerPayload.lamps.length>0){
+      return { list: lastViewerPayload.lamps, logSrc: lastViewerPayload.log||[] };
+    }
+    return null;
+  }
+  function pickPrimaryLamp(list){
+    return list.find(l=>l.kind==='colorpair') || list.find(l=>l.kind==='run') || list[0];
+  }
+  function kpiBlock(label, value, cls){
+    return `<div class="dash-kpi"><div class="k-label">${escapeHtml(label)}</div><div class="k-value ${cls||''}">${value}</div></div>`;
+  }
+
+  // ---- period (day/week/month/term) aggregation from Firebase daily history ----
+  let dailyCache = {}; // { 'YYYY-MM-DD': {run, err} }
+  let dailyCacheLoading = false;
+  async function refreshDailyCache(){
+    if(!connId || dailyCacheLoading) return;
+    dailyCacheLoading = true;
+    try{ dailyCache = await fbGetAllDaily(connId); }
+    catch(e){ /* keep old cache on failure */ }
+    dailyCacheLoading = false;
+    if(mode==='dashboard') renderDashboard();
+  }
+  function mondayOf(d){
+    const day=d.getDay(); const diff=(day===0?-6:1-day);
+    const m=new Date(d); m.setDate(d.getDate()+diff); m.setHours(0,0,0,0); return m;
+  }
+  function termStartOf(d){
+    const y=d.getFullYear(), m=d.getMonth(); // 0-indexed: Jun=5, Nov=10, Dec=11
+    if(m>=5 && m<=10) return new Date(y,5,1);      // Jun1 - Nov30 (same year)
+    if(m===11) return new Date(y,11,1);            // Dec1 (same year) start of Dec-May term
+    return new Date(y-1,11,1);                     // Jan-May -> term started Dec1 of previous year
+  }
+  function termEndOf(startDate){
+    // term spans 6 months from start (exclusive end), used only for display range text
+    const end = new Date(startDate); end.setMonth(end.getMonth()+6); end.setDate(end.getDate()-1);
+    return end;
+  }
+  function fmtDateShort(d){ return `${d.getMonth()+1}/${d.getDate()}`; }
+  function sumPeriod(startDate, todayDate, pendingToday){
+    let run=0, err=0, days=0;
+    const cur=new Date(startDate); cur.setHours(0,0,0,0);
+    const end=new Date(todayDate); end.setHours(0,0,0,0);
+    const todayKey = dateKeyOf(end);
+    while(cur<=end){
+      if(cur.getDay()!==0){ // exclude Sundays entirely
+        const key = dateKeyOf(cur);
+        const rec = dailyCache[key] || {run:0,err:0};
+        let r=rec.run||0, e=rec.err||0;
+        if(key===todayKey && pendingToday){ r+=pendingToday.run||0; e+=pendingToday.err||0; }
+        run+=r; err+=e; days++;
+      }
+      cur.setDate(cur.getDate()+1);
+    }
+    return {run, err, days};
+  }
+  function renderPeriodTable(pendingToday){
+    lastPendingToday = pendingToday;
+    const today = new Date();
+    const periods = [
+      { key:'Day',   start: today },
+      { key:'Week',  start: mondayOf(today) },
+      { key:'Month', start: new Date(today.getFullYear(), today.getMonth(), 1) },
+      { key:'Term',  start: termStartOf(today) }
+    ];
+    for(const p of periods){
+      const { run, days } = sumPeriod(p.start, today, pendingToday);
+      const maxSec = Math.max(1, days*86400);
+      const rate = Math.min(999, (run/maxSec)*100);
+      const rangeEl = document.getElementById('p'+p.key+'Range');
+      const timeEl = document.getElementById('p'+p.key+'Time');
+      const rateEl = document.getElementById('p'+p.key+'Rate');
+      if(rangeEl) rangeEl.textContent = (p.key==='Day') ? fmtDateShort(today) : `${fmtDateShort(p.start)}〜${fmtDateShort(today)}（${days}日）`;
+      if(timeEl) timeEl.textContent = fmtDuration(run);
+      if(rateEl) rateEl.textContent = rate.toFixed(1)+'%';
+    }
+    applyPeriodFilter();
+  }
+  let periodFilter = 'Month';
+  let lastPendingToday = null;
+  const WEEKDAY_JP = ['日','月','火','水','木','金','土'];
+  function buildChartBars(periodKey){
+    const today = new Date();
+    const todayKey = dateKeyOf(today);
+    const pend = lastPendingToday;
+    const bars = [];
+    if(periodKey==='Day'){
+      const rec = dailyCache[todayKey] || {};
+      const hourly = Array.isArray(rec.hourly) ? rec.hourly : new Array(24).fill(0);
+      const curHour = today.getHours();
+      for(let h=0; h<24; h++){
+        let v = hourly[h]||0;
+        if(h===curHour && pend) v += (pend.run||0);
+        bars.push({ label: (h%3===0)? h+'時':'', value:v, sunday:false });
+      }
+    } else if(periodKey==='Week'){
+      const start = mondayOf(today);
+      for(let i=0;i<7;i++){
+        const d = new Date(start); d.setDate(start.getDate()+i);
+        if(d.getDay()===0) continue; // exclude Sunday entirely from week chart
+        const key = dateKeyOf(d);
+        let v = (dailyCache[key]?.run)||0;
+        if(key===todayKey && pend) v += (pend.run||0);
+        bars.push({ label: WEEKDAY_JP[d.getDay()]+'('+(d.getMonth()+1)+'/'+d.getDate()+')', value:v, sunday:false });
+      }
+    } else if(periodKey==='Month'){
+      const y=today.getFullYear(), m=today.getMonth();
+      const lastDay = today.getDate(); // up to today only
+      for(let day=1; day<=lastDay; day++){
+        const d = new Date(y,m,day);
+        const key = dateKeyOf(d);
+        let v = (dailyCache[key]?.run)||0;
+        if(key===todayKey && pend) v += (pend.run||0);
+        bars.push({ label: (day%5===0||day===1||day===lastDay) ? day+'日' : '', value:v, sunday:d.getDay()===0 });
+      }
+    } else if(periodKey==='Term'){
+      const start = termStartOf(today);
+      for(let i=0;i<6;i++){
+        const mStart = new Date(start.getFullYear(), start.getMonth()+i, 1);
+        if(mStart>today) break;
+        const mEnd = new Date(mStart.getFullYear(), mStart.getMonth()+1, 0);
+        const iterEnd = mEnd>today ? today : mEnd;
+        let sum=0;
+        const cur=new Date(mStart);
+        while(cur<=iterEnd){
+          const key=dateKeyOf(cur);
+          let v=(dailyCache[key]?.run)||0;
+          if(key===todayKey && pend) v += (pend.run||0);
+          sum+=v;
+          cur.setDate(cur.getDate()+1);
+        }
+        bars.push({ label:(mStart.getMonth()+1)+'月', value:sum, sunday:false });
+      }
+    }
+    return bars;
+  }
+  function renderPeriodChart(){
+    const bars = buildChartBars(periodFilter);
+    const max = Math.max(1, ...bars.map(b=>b.value));
+    const chartEl = document.getElementById('periodChart');
+    chartEl.innerHTML = bars.map(b=>{
+      const hPct = Math.max(1, (b.value/max)*100);
+      const cls = b.sunday ? 'bar sunday' : 'bar';
+      const title = fmtDuration(b.value);
+      return `<div class="bar-col" title="${title}"><div class="${cls}" style="height:${hPct}%"></div><div class="bar-label">${b.label}</div></div>`;
+    }).join('');
+  }
+  function applyPeriodFilter(){
+    document.querySelectorAll('#periodTable tbody tr').forEach(tr=>{
+      tr.style.display = (tr.dataset.p===periodFilter) ? '' : 'none';
+    });
+    renderPeriodChart();
+  }
+  document.getElementById('periodFilter').addEventListener('click', (e)=>{
+    const btn = e.target.closest('.pf-btn'); if(!btn) return;
+    periodFilter = btn.dataset.p;
+    document.querySelectorAll('#periodFilter .pf-btn').forEach(b=>b.classList.toggle('active', b===btn));
+    applyPeriodFilter();
+  });
+
+  function renderDashboard(){
+    if(mode!=='dashboard') return;
+    dashMeta.textContent = '出力日時: ' + new Date().toLocaleString('ja-JP',{hour12:false});
+    const src = getDashboardLamps();
+    if(!src){
+      dashSub.textContent = 'データがありません';
+      dashKpis.innerHTML = kpiBlock('状態','データなし') ;
+      lampTableBody.innerHTML=''; dashLogTableBody.innerHTML='';
+      const ctx2 = timelineCanvas.getContext('2d'); ctx2.clearRect(0,0,timelineCanvas.width,timelineCanvas.height);
+      donutChart.style.background='#eee'; donutCenter.textContent='-'; donutLegend.innerHTML='';
+      return;
+    }
+    const { list, logSrc } = src;
+    const primary = pickPrimaryLamp(list);
+    dashSub.textContent = '代表ランプ: ' + primary.name + '（' + (primary.kind==='colorpair'?'赤緑1領域':primary.kind==='error'?'エラー用':'稼働用') + '）';
+    renderPeriodTable({ run: primary.pendingRun||0, err: primary.pendingErr||0 });
+
+    const now = Date.now();
+    const createdAt = primary.createdAt || now;
+    const elapsedSec = Math.max(1, (now-createdAt)/1000);
+    const runSec = primary.onSeconds||0;
+    const errSec = primary.errorSeconds||0;
+    const offSec = Math.max(0, elapsedSec-runSec-errSec);
+    const rate = Math.min(100, (runSec/elapsedSec)*100);
+
+    let overall;
+    if(primary.kind==='colorpair'){ overall = primary.state==='error'?'エラー停止':primary.state==='run'?'稼働中':'停止中'; }
+    else if(primary.kind==='error'){ overall = primary.state==='on'?'エラー中':'正常'; }
+    else { overall = primary.state==='on'?'稼働中':primary.state==='blink'?'点滅中':'停止中'; }
+    const overallCls = /エラー/.test(overall) ? 'red' : (overall==='稼働中'?'green':'');
+
+    dashKpis.innerHTML = [
+      kpiBlock('現在の状態', escapeHtml(overall), overallCls),
+      kpiBlock('稼働率', rate.toFixed(1)+'%', 'green'),
+      kpiBlock('累計稼働時間', fmtDuration(runSec)),
+      kpiBlock('エラー回数 / 累計時間', (primary.errorCount||0)+'回 / '+fmtDuration(errSec), (primary.errorCount||0)>0?'red':'')
+    ].join('');
+
+    // ---- timeline ----
+    const tctx = timelineCanvas.getContext('2d');
+    const W = timelineCanvas.width, H = timelineCanvas.height;
+    tctx.clearRect(0,0,W,H);
+    const transitions = (primary.transitions||[]).slice().sort((a,b)=>a.at-b.at);
+    const segs = [];
+    let cursorTime = createdAt, cursorState = 'measuring';
+    for(const t of transitions){ segs.push({from:cursorTime, to:t.at, state:cursorState}); cursorTime=t.at; cursorState=t.state; }
+    segs.push({from:cursorTime, to:now, state:cursorState});
+    const totalSpan = Math.max(1, now-createdAt);
+    const segColor = (kind, state) => {
+      if(kind==='colorpair'){ if(state==='error') return '#c23f45'; if(state==='run') return '#2e9c5c'; if(state==='off') return '#9aa0a6'; return '#e2e5e8'; }
+      if(kind==='error'){ if(state==='on') return '#c23f45'; if(state==='off') return '#9aa0a6'; return '#e2e5e8'; }
+      if(state==='on') return '#2e9c5c'; if(state==='blink') return '#c9891f'; if(state==='off') return '#9aa0a6'; return '#e2e5e8';
+    };
+    for(const s of segs){
+      const x0 = ((s.from-createdAt)/totalSpan)*W, x1 = ((s.to-createdAt)/totalSpan)*W;
+      tctx.fillStyle = segColor(primary.kind, s.state);
+      tctx.fillRect(x0, 8, Math.max(1,x1-x0), H-16);
+    }
+    tctx.strokeStyle='#c9cdd2'; tctx.strokeRect(0,8,W,H-16);
+    const spanMin = Math.round(totalSpan/60000);
+    timelineNote.textContent = `（開始からの経過: 約${spanMin}分）`;
+
+    // ---- donut ----
+    const total = Math.max(1, runSec+errSec+offSec);
+    const pRun = runSec/total*100, pErr = errSec/total*100;
+    donutChart.style.background = `conic-gradient(#2e9c5c 0% ${pRun}%, #c23f45 ${pRun}% ${pRun+pErr}%, #9aa0a6 ${pRun+pErr}% 100%)`;
+    donutCenter.innerHTML = rate.toFixed(0)+'%<br><span style="font-size:9px;font-weight:500;color:#777;">稼働率</span>';
+    donutLegend.innerHTML = `
+      <div><i class="lg" style="background:#2e9c5c"></i>稼働 ${fmtDuration(runSec)}</div>
+      <div><i class="lg" style="background:#c23f45"></i>エラー ${fmtDuration(errSec)}</div>
+      <div><i class="lg" style="background:#9aa0a6"></i>停止 ${fmtDuration(offSec)}</div>
+    `;
+
+    // ---- lamp table ----
+    lampTableBody.innerHTML = list.map(l=>{
+      const kindLabel = l.kind==='colorpair'?'赤緑1領域':l.kind==='error'?'エラー用':'稼働用';
+      const stLabel = stateLabel(l.state, l.kind);
+      return `<tr><td>${escapeHtml(l.name)}</td><td>${kindLabel}</td><td>${stLabel}</td><td>${fmtDuration(l.onSeconds||0)}</td><td>${l.errorCount||0}</td></tr>`;
+    }).join('');
+
+    // ---- recent log ----
+    const rows = logSrc.slice(0,10).map(entry=>{
+      const m = entry.html.match(/^<span class="t">(.*?)<\/span><span>(.*)$/);
+      const time = m?m[1]:'';
+      const rest = m?m[2].replace(/<\/?span[^>]*>/g,''):entry.html.replace(/<[^>]+>/g,'');
+      return `<tr><td>${time}</td><td>${rest}</td></tr>`;
+    }).join('');
+    dashLogTableBody.innerHTML = rows || '<tr><td colspan="2" style="color:#999;">イベントはまだありません</td></tr>';
+  }
+  setInterval(()=>{ if(mode==='dashboard') renderDashboard(); }, 2000);
+  setInterval(()=>{ if(mode==='dashboard') refreshDailyCache(); }, 20000);
 
   renderSidebar();
 })();
